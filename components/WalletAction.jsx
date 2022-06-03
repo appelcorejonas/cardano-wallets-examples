@@ -1,26 +1,11 @@
 import Wallet from '../cardano/wallet';
 
 const WalletAction = () => {
-    // const [cookie, setCookie] = useCookies(['wallet']);
-    // const [walletConnected, setWalletConnected] = useState(false);
-    // const [wallets, setWallets] = useState([]);
-  
-    // const walletIcons = {
-    //   nami: <NamiLogo className="my-2 h-8 w-8 fill-buttonPrimary" />,
-    //   eternl: <EternlLogo className="my-1 h-10 w-10 fill-buttonPrimary" />,
-    //   gerowallet: <GeroLogo className="my-2 h-8 w-8 fill-buttonPrimary" />,
-    // };
-  
-    const connectWallet = async () => {
-      const connected = await Wallet.connect();
+    const connectWallet = async (walletName) => {
+      const connected = await Wallet.connect(walletName);
       if(connected){
 
       }
-    //   if (connected) {
-    //     setWalletConnected(true);
-    //     setCookie('wallet', wallet);
-    //     Router.push('/account');
-    //   }
     };
 
     const delegateWallet = async () => {
@@ -28,15 +13,12 @@ const WalletAction = () => {
       if(connected){
 
       }
-    //   if (connected) {
-    //     setWalletConnected(true);
-    //     setCookie('wallet', wallet);
-    //     Router.push('/account');
-    //   }
     };
   
     return <div>
-          <div onClick={() => connectWallet()}>Connect</div>
+          <div onClick={() => connectWallet("typhon")}>Connect Typhon Wallet</div>
+          <div onClick={() => connectWallet("eternl")}>Connect Eternl Wallet</div>
+          <div onClick={() => connectWallet("nami")}>Connect Nami Wallet</div>
           <div onClick={() => delegateWallet()}>Delegate</div>
           </div>;
   };
