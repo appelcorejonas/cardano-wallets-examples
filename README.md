@@ -1,7 +1,18 @@
+This is a simple "get started" example with Nextjs, of how to connect to a Cardano wallet and then delegate your wallet to a stakepool.
+The stakepool ID is hard coded into cardano\wallet\index.js
+
+I found all info to do this here:
+https://github.com/dcSpark/cardano-multiplatform-lib
+https://github.com/StricaHQ/examples-dapp-connector/blob/master/transactions/delegation.html
+Not implemented yet: https://github.com/Berry-Pool/nami-wallet/
+
+
+
 You need: 
 -Visual studio code
 -Nextjs
 -yarn
+-Typhon wallet browser extension (https://typhonwallet.io/#/download)
 
 
 To start this example project:
