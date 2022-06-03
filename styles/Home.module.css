@@ -108,6 +108,11 @@
   margin-left: 0.5rem;
 }
 
+.walletIcon{
+  height: 1em;
+  width: 1em;
+}
+
 @media (max-width: 600px) {
   .grid {
     width: 100%;

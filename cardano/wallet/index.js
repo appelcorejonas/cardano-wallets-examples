@@ -32,6 +32,8 @@ class Wallet {
             console.log("Connection successful!");
             document.getElementById("walletStatus").innerHTML = instance.name +  ": connection successful!";
 
+            document.getElementById("walletImage").src = instance.icon;
+
             const addressText = await this._getAddress();
             console.log("Wallet address: " + addressText);
             document.getElementById("walletAddress").innerHTML = addressText;
@@ -80,7 +82,7 @@ class Wallet {
         }
         else if(provider.name === "eternl"){
           //cbor hex expected 
-          const balanceResponse = await provider.getBalance(); //TODO: not working!
+          const balanceResponse = await provider.getNetworkId(); //TODO: not working!
           console.log(balanceResponse);
           if (balanceResponse) {
             return balanceResponse;

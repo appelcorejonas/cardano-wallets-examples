@@ -17,6 +17,7 @@ const Home: NextPage = () => {
         <h1 className={styles.title}>
           Cardano connector!
         </h1>
+        <img id="walletImage" className={styles.walletIcon}></img>
         <span id="walletStatus"></span>
         <span id="walletAddress"></span>
         <span id="walletBalance"></span>
