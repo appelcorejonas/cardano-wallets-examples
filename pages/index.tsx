@@ -19,6 +19,7 @@ const Home: NextPage = () => {
         </h1>
         <span id="walletStatus"></span>
         <span id="walletAddress"></span>
+        <span id="walletBalance"></span>
         <WalletAction />
         <span id="delagateStatus"></span>
         <span id="delagateTransactionId"></span>

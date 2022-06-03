@@ -36,6 +36,10 @@ class Wallet {
             console.log("Wallet address: " + addressText);
             document.getElementById("walletAddress").innerHTML = addressText;
 
+            const balance = await this._getBalance();
+            console.log("Wallet balance: " + balance);
+            document.getElementById("walletBalance").innerHTML = balance + " ADA";
+
             return true;
         }
 
@@ -53,30 +57,42 @@ class Wallet {
           }
         }
         else if(provider.name === "eternl"){
-          //return this._getUsedAddresses();
-          return "eternl: No address found";
+          return "eternl: TODO";
         }
         else if(provider.name === "Nami"){
-          //return this._getUsedAddresses();
-          return "Nami: No address found";
+          return "Nami: TODO address";
         }
       }
 
       return "Error: No address found";
     };
 
-    async _getUsedAddresses() {
-      const usedAddresses = await this._provider.getUsedAddresses;
-      console.log(usedAddresses);
-      if(usedAddresses){
-      return usedAddresses.map(address =>
-        window.cardano?.Instance.Address.from_bytes(fromHex(address)).to_bech32()
-      )[0];
+    async _getBalance() {
+      const provider = this._provider;
+
+      if(provider){
+        if(provider.name === "Typhon Wallet"){
+          const balanceResponse = await provider.getBalance();
+          console.log(balanceResponse);
+          if (balanceResponse) {
+            return balanceResponse.data.ada/1000000;
+          }
+        }
+        else if(provider.name === "eternl"){
+          //cbor hex expected 
+          const balanceResponse = await provider.getBalance(); //TODO: not working!
+          console.log(balanceResponse);
+          if (balanceResponse) {
+            return balanceResponse;
+          }
+        }
+        else if(provider.name === "Nami"){
+          return "Nami: TODO balance";
+        }
       }
 
-      return "No address found";
+      return "Error: No balance found";
     };
-
 
     async _enable() {
         const provider = this._provider;
