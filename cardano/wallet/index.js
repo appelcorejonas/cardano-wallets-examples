@@ -53,15 +53,30 @@ class Wallet {
           }
         }
         else if(provider.name === "eternl"){
-          return "TODO: Eternl address";
+          //return this._getUsedAddresses();
+          return "eternl: No address found";
         }
         else if(provider.name === "Nami"){
-          return "TODO: Nami address";
+          //return this._getUsedAddresses();
+          return "Nami: No address found";
         }
       }
 
       return "Error: No address found";
-    }
+    };
+
+    async _getUsedAddresses() {
+      const usedAddresses = await this._provider.getUsedAddresses;
+      console.log(usedAddresses);
+      if(usedAddresses){
+      return usedAddresses.map(address =>
+        window.cardano?.Instance.Address.from_bytes(fromHex(address)).to_bech32()
+      )[0];
+      }
+
+      return "No address found";
+    };
+
 
     async _enable() {
         const provider = this._provider;
@@ -141,9 +156,6 @@ class Wallet {
           console.log("TODO Delegating " + provider.name);
           document.getElementById("delagateStatus").innerHTML = "TODO - Delegate with Nami";
         }
-
-      
-      
     };
 }
 
