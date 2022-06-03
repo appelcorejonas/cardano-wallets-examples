@@ -10,6 +10,10 @@ class Wallet {
         instance = await window.cardano?.typhon;
       }
 
+      else if(walletName == "eternl"){
+        instance = await window.cardano?.eternl;
+      }
+
       else if(walletName == "nami"){
         instance = await window.cardano?.nami;
       }
@@ -26,17 +30,38 @@ class Wallet {
             }
 
             console.log("Connection successful!");
-            document.getElementById("walletStatus").innerHTML = instance.name +  " wallet connection successful!";
-            const addressResponse = await window.cardano.typhon.getAddress();
-            if (addressResponse.status) {
-              console.log("Wallet address: " + addressResponse.data);
-              document.getElementById("walletAddress").innerHTML = addressResponse.data;
-            }
+            document.getElementById("walletStatus").innerHTML = instance.name +  ": connection successful!";
+
+            const addressText = await this._getAddress();
+            console.log("Wallet address: " + addressText);
+            document.getElementById("walletAddress").innerHTML = addressText;
+
             return true;
         }
 
         return  false;
     };
+
+    async _getAddress() {
+      const provider = this._provider;
+
+      if(provider){
+        if(provider.name === "Typhon Wallet"){
+          const addressResponse = await provider.getAddress();
+          if (addressResponse.status) {
+            return addressResponse.data;
+          }
+        }
+        else if(provider.name === "eternl"){
+          return "TODO: Eternl address";
+        }
+        else if(provider.name === "Nami"){
+          return "TODO: Nami address";
+        }
+      }
+
+      return "Error: No address found";
+    }
 
     async _enable() {
         const provider = this._provider;
@@ -108,9 +133,16 @@ class Wallet {
             document.getElementById("delagateStatus").innerHTML = delegateResponse.error;
           }
         }
-        else if(provider.name === "Nami"){
-          console.log("Delegating " + provider.name);
+        else if(provider.name === "eternl"){
+          console.log("TODO Delegating " + provider.name);
+          document.getElementById("delagateStatus").innerHTML = "TODO - Delegate with Eternl";
         }
+        else if(provider.name === "Nami"){
+          console.log("TODO Delegating " + provider.name);
+          document.getElementById("delagateStatus").innerHTML = "TODO - Delegate with Nami";
+        }
+
+      
       
     };
 }
