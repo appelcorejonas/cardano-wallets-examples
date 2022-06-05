@@ -19,7 +19,7 @@
 
 "@dcspark/cardano-multiplatform-lib-browser@^0.3.0":
   version "0.3.0"
-  resolved "https://registry.npmjs.org/@dcspark/cardano-multiplatform-lib-browser/-/cardano-multiplatform-lib-browser-0.3.0.tgz"
+  resolved "https://registry.yarnpkg.com/@dcspark/cardano-multiplatform-lib-browser/-/cardano-multiplatform-lib-browser-0.3.0.tgz#4eae8e5625e27d5f9496c74c2582d87f05f72f93"
   integrity sha512-EMMHIWlZMATRUhan0akEtSz/9wazMjpKFZh3udeTvtZpT58r14Y9buSJ9XaoNwHBifYrlS/Ygh6UgVIYw2YLfw==
 
 "@eslint/eslintrc@^1.3.0":

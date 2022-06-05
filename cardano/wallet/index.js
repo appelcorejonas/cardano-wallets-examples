@@ -1,5 +1,3 @@
-import Cardano from '@dcspark/cardano-multiplatform-lib-browser'
-
 class Wallet {
     async connect(walletName) {
 
@@ -66,14 +64,16 @@ class Wallet {
           }
         }
         else if(provider.name === "eternl"){
-          const addressResponse = await this.getFirstUsedAddresses();
-          console.log(addressResponse);
-          return addressResponse;
+          // const addressResponse = await this.getFirstUsedAddresses();
+          // console.log(addressResponse);
+          // return addressResponse;
+          return "TODO eternl address";
         }
         else if(provider.name === "Nami"){
-          const addressResponse = await this.getFirstUsedAddresses();
-          console.log(addressResponse);
-          return addressResponse;
+          // const addressResponse = await this.getFirstUsedAddresses();
+          // console.log(addressResponse);
+          // return addressResponse;
+          return "TODO Nami address";
         }
       }
 
