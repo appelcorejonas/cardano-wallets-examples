@@ -20,6 +20,10 @@ class Wallet {
         
         if (instance) {
             this._provider = instance;
+            this._providerapi = null;
+
+            console.log("Provider instance loaded");
+            console.log(instance);
 
             // enable
             const accessEnabled = await this._enable();
@@ -50,6 +54,9 @@ class Wallet {
 
     async _getAddress() {
       const provider = this._provider;
+      const providerapi = this._providerapi;
+      console.log("Get address");
+      console.log(provider);
 
       if(provider){
         if(provider.name === "Typhon Wallet"){
@@ -59,10 +66,14 @@ class Wallet {
           }
         }
         else if(provider.name === "eternl"){
-          return "eternl: TODO";
+          const addressResponse = await this.getFirstUsedAddresses();
+          console.log(addressResponse);
+          return addressResponse;
         }
         else if(provider.name === "Nami"){
-          return "Nami: TODO address";
+          const addressResponse = await this.getFirstUsedAddresses();
+          console.log(addressResponse);
+          return addressResponse;
         }
       }
 
@@ -71,6 +82,9 @@ class Wallet {
 
     async _getBalance() {
       const provider = this._provider;
+      const providerapi = this._providerapi;
+      console.log("Get balance");
+      console.log(provider);
 
       if(provider){
         if(provider.name === "Typhon Wallet"){
@@ -82,18 +96,38 @@ class Wallet {
         }
         else if(provider.name === "eternl"){
           //cbor hex expected 
-          const balanceResponse = await provider.getNetworkId(); //TODO: not working!
+          const balanceResponse = await providerapi.getBalance(); //TODO: not working!
           console.log(balanceResponse);
           if (balanceResponse) {
             return balanceResponse;
           }
         }
         else if(provider.name === "Nami"){
-          return "Nami: TODO balance";
+          const balanceResponse = await providerapi.getBalance(); //TODO: not working!
+          console.log(balanceResponse);
+          if (balanceResponse) {
+            return balanceResponse;
+          }
         }
       }
 
       return "Error: No balance found";
+    };
+
+    async getFirstUsedAddresses() {
+      const providerapi = this._providerapi;
+      if(!providerapi)
+        return "No address found"; 
+
+      const usedAddresses = await providerapi.getUsedAddresses();
+  
+      console.log(usedAddresses);
+
+      console.log(window.cardano);
+
+      return usedAddresses.map(address =>
+        window.cardano.Address.from_bytes(Buffer.from(address, "hex")).to_bech32()
+      )[0];
     };
 
     async _enable() {
@@ -102,22 +136,21 @@ class Wallet {
         if(!provider) return false;
 
         // check if site is whitelisted
+        console.log("Is provider enabled?")
         const isEnabledResponse = await provider.isEnabled();
-
+        console.log(isEnabledResponse);
         if(isEnabledResponse){
-          console.log(isEnabledResponse);
           if (isEnabledResponse.data){
             return true; //Typhon
           }
-          else if (isEnabledResponse === true){
-            return true; //Nami
-          }
         }
   
-        // Site not white listed, Request user to whitelist
+        //Request user to whitelist and get api. If already whilelisted, just get api.
+        console.log("Enabled provider")
         const enableResponse = await provider.enable();
-  
-        if (enableResponse.status) {
+        console.log(enableResponse);
+        if (enableResponse) {
+          this._providerapi = enableResponse;
           return true;
         }
   
