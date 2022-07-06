@@ -19,7 +19,9 @@ const Home: NextPage = () => {
         </h1>
         <img id="walletImage" className={styles.walletIcon}></img>
         <span id="walletStatus"></span>
-        <span id="walletAddress"></span>
+        <span id="paymentWalletAddress"></span>
+        <span id="rewardWalletAddress"></span>
+        <span id="stakeKeyHash"></span>
         <span id="walletBalance"></span>
         <WalletAction />
         <span id="delagateStatus"></span>

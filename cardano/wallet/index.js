@@ -1,11 +1,16 @@
 import { CoinSelectionStrategyCIP2 } from '@dcspark/cardano-multiplatform-lib-browser';
+import loader from './loader';
 import Loader from './loader';
 
 class Wallet {
     async connect(walletName) {
 
       var instance = null;
-      document.getElementById("walletAddress").innerHTML = null;
+      document.getElementById("walletStatus").innerHTML = null;
+      document.getElementById("paymentWalletAddress").innerHTML = null;
+      document.getElementById("rewardWalletAddress").innerHTML = null;
+      document.getElementById("stakeKeyHash").innerHTML = null;
+      document.getElementById("walletBalance").innerHTML = null;
 
       if(walletName == "typhon"){
         instance = await window.cardano?.typhon;
@@ -42,9 +47,18 @@ class Wallet {
 
             document.getElementById("walletImage").src = instance.icon;
 
-            const addressText = await this._getAddress();
-            console.log("Wallet address: " + addressText);
-            document.getElementById("walletAddress").innerHTML = addressText;
+            const addressText = await this._getPaymentAddress();
+            console.log("Wallet payment address: " + addressText);
+            document.getElementById("paymentWalletAddress").innerHTML = addressText;
+
+            const rewardAddressText = await this._getRewardAddress(stakeKeyHashText);
+            console.log("Wallet reward address: " + addressText);
+            document.getElementById("rewardWalletAddress").innerHTML = rewardAddressText;
+
+            const stakeKeyHashText = await this._getStakeKeyHash(rewardAddressText);
+            console.log("Stake key hash: " + stakeKeyHashText);
+            document.getElementById("stakeKeyHash").innerHTML = stakeKeyHashText;
+
 
             const balance = await this._getBalance();
             console.log("Wallet balance: " + balance);
@@ -56,10 +70,55 @@ class Wallet {
         return  false;
     };
 
-    async _getAddress() {
+    //TODO
+    async _getRewardAddress(stakeKey) {
       const provider = this._provider;
       const providerapi = this._providerapi;
-      console.log("Get address");
+      console.log("Get reward address");
+      console.log(provider);
+
+      if(provider){
+        if(provider.name === "Typhon Wallet"){
+          return "";
+        }
+        else if(provider.name === "eternl"){
+          await Loader.load();
+          const addressResponse = await this.getFirstRewardAddress();
+          console.log(addressResponse);
+          const addressBytes = Buffer.from(addressResponse, 'hex');
+          const address = Loader.Cardano.Address.from_bytes(addressBytes);
+          console.log(address.to_bech32());
+          return address.to_bech32();
+        } 
+        else if(provider.name === "Nami"){
+          await Loader.load();
+          const addressResponse = await this.getFirstRewardAddress();
+          console.log(addressResponse);
+          const addressBytes = Buffer.from(addressResponse, 'hex');
+          const address = Loader.Cardano.Address.from_bytes(addressBytes);
+          console.log(address.to_bech32());
+          return address.to_bech32();
+        }
+      }
+
+      return "Error: No address found";
+    };
+
+    async _getStakeKeyHash(stakeKey) {
+      await Loader.load();
+
+      console.log(Loader.Cardano);
+
+      const addressResponse = await this.getFirstRewardAddress();
+      console.log(addressResponse);
+      return addressResponse;
+    };
+  
+
+    async _getPaymentAddress() {
+      const provider = this._provider;
+      const providerapi = this._providerapi;
+      console.log("Get payment address");
       console.log(provider);
 
       if(provider){
@@ -70,7 +129,7 @@ class Wallet {
           }
         }
         else if(provider.name === "eternl"){
-          Loader.load();
+          await Loader.load();
           const addressResponse = await this.getFirstUsedAddresses();
           console.log(addressResponse);
           const addressBytes = Buffer.from(addressResponse, 'hex');
@@ -79,7 +138,7 @@ class Wallet {
           return address.to_bech32();
         } 
         else if(provider.name === "Nami"){
-          Loader.load();
+          await Loader.load();
           const addressResponse = await this.getFirstUsedAddresses();
           console.log(addressResponse);
           const addressBytes = Buffer.from(addressResponse, 'hex');
@@ -107,7 +166,7 @@ class Wallet {
           }
         }
         else if(provider.name === "eternl"){
-          Loader.load();
+          await Loader.load();
           //cbor hex expected 
           const balanceResponse = await providerapi.getBalance(); //TODO: not working!
           console.log(balanceResponse);
@@ -118,7 +177,7 @@ class Wallet {
           }
         }
         else if(provider.name === "Nami"){
-          Loader.load();
+          await Loader.load();
           const balanceResponse = await providerapi.getBalance(); //TODO: not working!
           console.log(balanceResponse);
           const balance = Loader.Cardano.Value.from_bytes(Buffer.from(balanceResponse, 'hex'));
@@ -133,18 +192,33 @@ class Wallet {
     };
 
     async getFirstUsedAddresses() {
-      await Loader.load();
-
       const providerapi = this._providerapi;
       if(!providerapi)
-        return "No address found"; 
+        return "No used address found"; 
 
-      const usedAddresses = await providerapi.getUsedAddresses();
+      const addresses = await providerapi.getUsedAddresses();
   
-      console.log(usedAddresses);
+      console.log(addresses);
 
-      if(usedAddresses && usedAddresses.length > 0){
-        return usedAddresses[0];
+      if(addresses && addresses.length > 0){
+        return addresses[0];
+      }
+      else{
+        return "";
+      }
+    };
+
+    async getFirstRewardAddress() {
+      const providerapi = this._providerapi;
+      if(!providerapi)
+        return "No reward address found"; 
+
+      const addresses = await providerapi.getRewardAddresses();
+  
+      console.log(addresses);
+
+      if(addresses && addresses.length > 0){
+        return addresses[0];
       }
       else{
         return "";
@@ -179,6 +253,7 @@ class Wallet {
     };
 
     async delegate() {
+        await Loader.load();
         const provider = this._provider;
 
         if(!provider){
@@ -226,20 +301,185 @@ class Wallet {
         }
         else if(provider.name === "Nami"){
           console.log("TODO Delegating " + provider.name);
+          await this.initDelegation();
           document.getElementById("delagateStatus").innerHTML = "TODO - Delegate with Nami";
         }
     };
 
-    async delegationTx (account, delegation, protocolParameters) {
-      const provider = this._provider;
+    async initDelegation() {
+      setData({
+        fee: '',
+        stakeRegistration: '',
+        rewards: '',
+        ready: false,
+        error: '',
+      });
+      const protocolParameters = await initTx();
+      const checkTx = async (count) => {
+        if (count >= 5) {
+          setData((d) => ({
+            ...d,
+            error: 'Transaction not possible (maybe insufficient balance)',
+          }));
+          throw ERROR.txNotPossible;
+        }
+        try {
+          const tx = await this.delegationTx(
+            account,
+            delegation,
+            protocolParameters
+          );
+          setData({
+            fee: tx.body().fee().to_str(),
+            tx,
+            account,
+            stakeRegistration:
+              !delegation.active && protocolParameters.keyDeposit,
+            ready: true,
+          });
+        } catch (e) {
+          checkTx(count + 1);
+        }
+      };
+      checkTx(0);
+    };
 
+    async blockfrostRequest(endpoint, headers, body, signal) {
+      const network = await getNetwork();
+      let result;
+    
+      while (!result || result.status_code === 500) {
+        if (result) {
+          await delay(100);
+        }
+        const rawResult = await fetch(provider.api.base(network.node) + endpoint, {
+          headers: {
+            ...provider.api.key(network.id),
+            ...provider.api.header,
+            ...headers,
+            'Cache-Control': 'no-cache',
+          },
+          method: body ? 'POST' : 'GET',
+          body,
+          signal,
+        });
+        result = await rawResult.json();
+      }
+    
+      return result;
+    };
+
+    async initTx () {
+      const latest_block = await blockfrostRequest('/blocks/latest');
+      const p = await blockfrostRequest(`/epochs/${latest_block.epoch}/parameters`);
+    
+      return {
+        linearFee: {
+          minFeeA: p.min_fee_a.toString(),
+          minFeeB: p.min_fee_b.toString(),
+        },
+        minUtxo: '1000000', //p.min_utxo, minUTxOValue protocol paramter has been removed since Alonzo HF. Calulation of minADA works differently now, but 1 minADA still sufficient for now
+        poolDeposit: p.pool_deposit,
+        keyDeposit: p.key_deposit,
+        coinsPerUtxoWord: p.coins_per_utxo_word,
+        maxValSize: p.max_val_size,
+        priceMem: p.price_mem,
+        priceStep: p.price_step,
+        maxTxSize: parseInt(p.max_tx_size),
+        slot: parseInt(latest_block.slot),
+      };
+    };
+
+    async signAndSubmit (
+      tx,
+      { keyHashes, accountIndex },
+      password
+      ) {
+      await Loader.load();
+      const witnessSet = await signTx(
+        Buffer.from(tx.to_bytes(), 'hex').toString('hex'),
+        keyHashes,
+        password,
+        accountIndex
+      );
+      const transaction = Loader.Cardano.Transaction.new(
+        tx.body(),
+        witnessSet,
+        tx.auxiliary_data()
+      );
+
+      const txHash = await submitTx(
+        Buffer.from(transaction.to_bytes(), 'hex').toString('hex')
+      );
+      return txHash;
+    };
+
+    async signAndSubmitHW (
+      tx,
+      { keyHashes, account, hw, partialSign }
+    ) {
+      await Loader.load();
+
+      const witnessSet = await signTxHW(
+        Buffer.from(tx.to_bytes(), 'hex').toString('hex'),
+        keyHashes,
+        account,
+        hw,
+        partialSign
+      );
+
+      const transaction = Loader.Cardano.Transaction.new(
+        tx.body(),
+        witnessSet,
+        tx.auxiliary_data()
+      );
+
+      try {
+        const txHash = await submitTx(
+          Buffer.from(transaction.to_bytes(), 'hex').toString('hex')
+        );
+        return txHash;
+      } catch (e) {
+        throw ERROR.submit;
+      }
+    };
+
+    async getDelegation () {
+      const rewardAddr = await this.GetRewardAddr();
+
+      const currentAccount = await getCurrentAccount();
+      const stake = await blockfrostRequest(
+        `/accounts/${rewardAddr}`
+      );
+      if (!stake || stake.error || !stake.pool_id) return {};
+      const delegation = await blockfrostRequest(
+        `/pools/${stake.pool_id}/metadata`
+      );
+      if (!delegation || delegation.error) return {};
+      return {
+        active: stake.active,
+        rewards: stake.withdrawable_amount,
+        homepage: delegation.homepage,
+        poolId: stake.pool_id,
+        ticker: delegation.ticker,
+        description: delegation.description,
+        name: delegation.name,
+      };
+    };
+
+    async delegationTx (protocolParameters) {
+      const provider = this._provider;
+      const delegation = await this.getDelegation();
+
+      const paymentAddr = await this.getAddress();
+      const stakeKeyHash = await this.getStakeKey();
       //--
       const utxos = await getUtxos();
     
       const outputs = Loader.Cardano.TransactionOutputs.new();
       outputs.add(
         Loader.Cardano.TransactionOutput.new(
-          Loader.Cardano.Address.from_bech32(account.paymentAddr),
+          Loader.Cardano.Address.from_bech32(paymentAddr),
           Loader.Cardano.Value.new(
             Loader.Cardano.BigNum.from_str(protocolParameters.keyDeposit)
           )
@@ -290,7 +530,7 @@ class Wallet {
             Loader.Cardano.StakeRegistration.new(
               Loader.Cardano.StakeCredential.from_keyhash(
                 Loader.Cardano.Ed25519KeyHash.from_bytes(
-                  Buffer.from(account.stakeKeyHash, 'hex')
+                  Buffer.from(stakeKeyHash, 'hex')
                 )
               )
             )
@@ -303,7 +543,7 @@ class Wallet {
           Loader.Cardano.StakeDelegation.new(
             Loader.Cardano.StakeCredential.from_keyhash(
               Loader.Cardano.Ed25519KeyHash.from_bytes(
-                Buffer.from(account.stakeKeyHash, 'hex')
+                Buffer.from(stakeKeyHash, 'hex')
               )
             ),
             Loader.Cardano.Ed25519KeyHash.from_bytes(
@@ -316,7 +556,7 @@ class Wallet {
     
       txBuilder.set_ttl(protocolParameters.slot + TX.invalid_hereafter);
       txBuilder.add_change_if_needed(
-        Loader.Cardano.Address.from_bech32(account.paymentAddr)
+        Loader.Cardano.Address.from_bech32(paymentAddr)
       );
     
       const transaction = Loader.Cardano.Transaction.new(
