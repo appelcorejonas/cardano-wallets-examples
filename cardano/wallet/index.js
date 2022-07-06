@@ -1,3 +1,6 @@
+import { CoinSelectionStrategyCIP2 } from '@dcspark/cardano-multiplatform-lib-browser';
+import Loader from './loader';
+
 class Wallet {
     async connect(walletName) {
 
@@ -17,11 +20,14 @@ class Wallet {
       }
         
         if (instance) {
+            await Loader.load();
             this._provider = instance;
             this._providerapi = null;
+            
 
             console.log("Provider instance loaded");
             console.log(instance);
+            console.log(Loader.Cardano);
 
             // enable
             const accessEnabled = await this._enable();
@@ -64,16 +70,22 @@ class Wallet {
           }
         }
         else if(provider.name === "eternl"){
-          // const addressResponse = await this.getFirstUsedAddresses();
-          // console.log(addressResponse);
-          // return addressResponse;
-          return "TODO eternl address";
-        }
+          Loader.load();
+          const addressResponse = await this.getFirstUsedAddresses();
+          console.log(addressResponse);
+          const addressBytes = Buffer.from(addressResponse, 'hex');
+          const address = Loader.Cardano.Address.from_bytes(addressBytes);
+          console.log(address.to_bech32());
+          return address.to_bech32();
+        } 
         else if(provider.name === "Nami"){
-          // const addressResponse = await this.getFirstUsedAddresses();
-          // console.log(addressResponse);
-          // return addressResponse;
-          return "TODO Nami address";
+          Loader.load();
+          const addressResponse = await this.getFirstUsedAddresses();
+          console.log(addressResponse);
+          const addressBytes = Buffer.from(addressResponse, 'hex');
+          const address = Loader.Cardano.Address.from_bytes(addressBytes);
+          console.log(address.to_bech32());
+          return address.to_bech32();
         }
       }
 
@@ -95,18 +107,24 @@ class Wallet {
           }
         }
         else if(provider.name === "eternl"){
+          Loader.load();
           //cbor hex expected 
           const balanceResponse = await providerapi.getBalance(); //TODO: not working!
           console.log(balanceResponse);
-          if (balanceResponse) {
-            return balanceResponse;
+          const balance = Loader.Cardano.Value.from_bytes(Buffer.from(balanceResponse, 'hex'));
+          const lovelaces = balance.coin().to_str();
+          if (lovelaces) {
+            return lovelaces/1000000;
           }
         }
         else if(provider.name === "Nami"){
+          Loader.load();
           const balanceResponse = await providerapi.getBalance(); //TODO: not working!
           console.log(balanceResponse);
-          if (balanceResponse) {
-            return balanceResponse;
+          const balance = Loader.Cardano.Value.from_bytes(Buffer.from(balanceResponse, 'hex'));
+          const lovelaces = balance.coin().to_str();
+          if (lovelaces) {
+            return lovelaces/1000000;
           }
         }
       }
@@ -115,6 +133,8 @@ class Wallet {
     };
 
     async getFirstUsedAddresses() {
+      await Loader.load();
+
       const providerapi = this._providerapi;
       if(!providerapi)
         return "No address found"; 
@@ -123,11 +143,12 @@ class Wallet {
   
       console.log(usedAddresses);
 
-      console.log(window.cardano);
-
-      return usedAddresses.map(address =>
-        window.cardano.Address.from_bytes(Buffer.from(address, "hex")).to_bech32()
-      )[0];
+      if(usedAddresses && usedAddresses.length > 0){
+        return usedAddresses[0];
+      }
+      else{
+        return "";
+      }
     };
 
     async _enable() {
@@ -180,7 +201,7 @@ class Wallet {
           return;
         }
   
-        const poolId = "pool1ykwcqf7r8mj9fmprr9f3y62ftsrlalxm22j383gfpav76ddrc25";
+        const poolId = "pool1ps2yl6axlh5uzzst99xzkk7x0fhlmr7x033j7cmmm82x2a9n8lj"; //UNI1
   
         //delegate
         console.log("Try delegate " + provider.name);
@@ -207,6 +228,103 @@ class Wallet {
           console.log("TODO Delegating " + provider.name);
           document.getElementById("delagateStatus").innerHTML = "TODO - Delegate with Nami";
         }
+    };
+
+    async delegationTx (account, delegation, protocolParameters) {
+      const provider = this._provider;
+
+      //--
+      const utxos = await getUtxos();
+    
+      const outputs = Loader.Cardano.TransactionOutputs.new();
+      outputs.add(
+        Loader.Cardano.TransactionOutput.new(
+          Loader.Cardano.Address.from_bech32(account.paymentAddr),
+          Loader.Cardano.Value.new(
+            Loader.Cardano.BigNum.from_str(protocolParameters.keyDeposit)
+          )
+        )
+      );
+      CoinSelection.setProtocolParameters(
+        protocolParameters.coinsPerUtxoWord,
+        protocolParameters.linearFee.minFeeA,
+        protocolParameters.linearFee.minFeeB,
+        protocolParameters.maxTxSize.toString()
+      );
+      const selection = await CoinSelection.randomImprove(utxos, outputs, 20);
+    
+      const inputs = selection.input;
+      const txBuilderConfig = Loader.Cardano.TransactionBuilderConfigBuilder.new()
+        .coins_per_utxo_word(
+          Loader.Cardano.BigNum.from_str(protocolParameters.coinsPerUtxoWord)
+        )
+        .fee_algo(
+          Loader.Cardano.LinearFee.new(
+            Loader.Cardano.BigNum.from_str(protocolParameters.linearFee.minFeeA),
+            Loader.Cardano.BigNum.from_str(protocolParameters.linearFee.minFeeB)
+          )
+        )
+        .key_deposit(Loader.Cardano.BigNum.from_str(protocolParameters.keyDeposit))
+        .pool_deposit(
+          Loader.Cardano.BigNum.from_str(protocolParameters.poolDeposit)
+        )
+        .max_tx_size(protocolParameters.maxTxSize)
+        .max_value_size(protocolParameters.maxValSize)
+        .prefer_pure_change(true)
+        .build();
+    
+      const txBuilder = Loader.Cardano.TransactionBuilder.new(txBuilderConfig);
+      for (let i = 0; i < inputs.length; i++) {
+        const utxo = inputs[i];
+        txBuilder.add_input(
+          utxo.output().address(),
+          utxo.input(),
+          utxo.output().amount()
+        );
+      }
+    
+      const certificates = Loader.Cardano.Certificates.new();
+      if (!delegation.active)
+        certificates.add(
+          Loader.Cardano.Certificate.new_stake_registration(
+            Loader.Cardano.StakeRegistration.new(
+              Loader.Cardano.StakeCredential.from_keyhash(
+                Loader.Cardano.Ed25519KeyHash.from_bytes(
+                  Buffer.from(account.stakeKeyHash, 'hex')
+                )
+              )
+            )
+          )
+        );
+      const poolKeyHash =
+        '0c144feba6fde9c10a0b294c2b5bc67a6ffd8fc67c632f637bd9d465'; //UNI1
+      certificates.add(
+        Loader.Cardano.Certificate.new_stake_delegation(
+          Loader.Cardano.StakeDelegation.new(
+            Loader.Cardano.StakeCredential.from_keyhash(
+              Loader.Cardano.Ed25519KeyHash.from_bytes(
+                Buffer.from(account.stakeKeyHash, 'hex')
+              )
+            ),
+            Loader.Cardano.Ed25519KeyHash.from_bytes(
+              Buffer.from(poolKeyHash, 'hex')
+            )
+          )
+        )
+      );
+      txBuilder.set_certs(certificates);
+    
+      txBuilder.set_ttl(protocolParameters.slot + TX.invalid_hereafter);
+      txBuilder.add_change_if_needed(
+        Loader.Cardano.Address.from_bech32(account.paymentAddr)
+      );
+    
+      const transaction = Loader.Cardano.Transaction.new(
+        txBuilder.build(),
+        Loader.Cardano.TransactionWitnessSet.new()
+      );
+    
+      return transaction;
     };
 }
 
